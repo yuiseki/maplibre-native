@@ -177,7 +177,7 @@ Mapbox Style Spec. Since it is derived from Mapbox's original work it also uses 
 <p>You can find an app that uses GLFW in <a href="https://github.com/maplibre/maplibre-native/tree/main/platform/glfw"><code>platform/glfw</code></a>. It works on macOS, Linux and Windows. The app shows an interactive map that can be interacted with. Since GLFW adds relatively little complexity this app is used a lot for development. You can also learn about the C++ API by studying the source code of the GLFW app.</p>
 <h2 id="rendering-backends"><a class="header" href="#rendering-backends">Rendering Backends</a></h2>
 <p>Originally the project only supported OpenGL 2.0. In 2023, the <a href="https://github.com/maplibre/maplibre-native/blob/main/design-proposals/2022-10-27-rendering-modularization.md">renderer was modularized</a> allowing for the implementation of alternate rendering backends. The first alternate rendering backend that was implemented was <a href="https://maplibre.org/news/2024-01-19-metal-support-for-maplibre-native-ios-is-here/">Metal</a>, followed by <a href="https://maplibre.org/news/2024-12-12-maplibre-android-vulkan/">Vulkan</a>. In the future other rendering backends could be implemented such as WebGPU.</p>
-<p>What platfroms support which rendering backend can be found below.</p>
+<p>What platforms support which rendering backend can be found below.</p>
 <div class="table-wrapper"><table><thead><tr><th>Platform</th><th>OpenGL ES 3.0</th><th>Vulkan 1.0</th><th>Metal</th></tr></thead><tbody>
 <tr><td>Android</td><td>✅</td><td>✅</td><td>❌</td></tr>
 <tr><td>iOS</td><td>❌</td><td>❌</td><td>✅</td></tr>
@@ -234,10 +234,6 @@ cd platform/android
 </code></pre>
 <p>To format all Kotlin source files, use:</p>
 <pre><code>$ ./gradlew formatKotlin
-</code></pre>
-<h2 id="benchmarks-in-pull-request"><a class="header" href="#benchmarks-in-pull-request">Benchmarks in Pull Request</a></h2>
-<p>To run the benchmarks (for Android) include the following line on a PR comment:</p>
-<pre><code>!benchmark android
 </code></pre>
 <h2 id="profiling"><a class="header" href="#profiling">Profiling</a></h2>
 <p>See <a href="android//profiling/tracy-profiling.html">Tracy Profiling</a> to understand how Tracy can be used for profiling.</p>
@@ -318,6 +314,80 @@ fun double(x: Int): Int {
 <p>Static assets are ideally uploaded to the <a href="https://maplibre-native.s3.eu-central-1.amazonaws.com/index.html#android-documentation-resources/">MapLibre Native S3 Bucket</a>.</p>
 <p>Please open an issue with the ARN of your AWS account to get upload privileges.</p>
 <p>You can use the macro <code>{{ s3_url("filename.example") }}</code> which will use a CDN instead of linking to the S3 bucket directly.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="benchmark"><a class="header" href="#benchmark">Benchmark</a></h1>
+<p>We have created a rendering performance benchmark for Android. The logic for this benchmark is encapsulated in <code>BenchMarkActivity.kt</code>.</p>
+<h2 id="styles"><a class="header" href="#styles">Styles</a></h2>
+<p>We have hardcoded various styles, which you can override with a <code>developer-config.xml</code> by adding some XML with the following structure:</p>
+<pre><code>&lt;array name="benchmark_style_names"&gt;
+  &lt;item&gt;Americana&lt;/item&gt;
+&lt;/array&gt;
+&lt;array name="benchmark_style_urls"&gt;
+  &lt;item&gt;https://americanamap.org/style.json&lt;/item&gt;
+&lt;/array&gt;
+</code></pre>
+<h2 id="retrieving-results"><a class="header" href="#retrieving-results">Retrieving Results</a></h2>
+<p>Results are logged to the console as they come in. After the benchmark is done running a <code>benchmark_results.json</code> file is generated. You can pull it off the device with for example adb:</p>
+<pre><code>adb shell "run-as org.maplibre.android.testapp cat files/benchmark_results.json" \
+  &gt; benchmark_results.json
+</code></pre>
+<h2 id="results"><a class="header" href="#results">Results</a></h2>
+<p>The <code>benchmark_results.json</code> containing the benchmark results will have the following structure.</p>
+<pre><code class="language-json">{
+  "results": [
+    {
+      "styleName": "AWS Open Data Standard Light",
+      "syncRendering": true,
+      "thermalState": 0,
+      "fps": 34.70237085812839,
+      "avgEncodingTime": 19.818289053808947,
+      "avgRenderingTime": 7.7432454899654255,
+      "low1pEncodingTime": 91.72538138784371,
+      "low1pRenderingTime": 26.573758581509203
+    },
+  ],
+  "deviceManufacturer": "samsung",
+  "model": "SM-G973F",
+  "renderer": "drawable",
+  "debugBuild": true,
+  "gitRevision": "fc95b79880223e34c2ce80339f698d095e3d63cd",
+  "timestamp": 1736454325393
+}
+</code></pre>
+<p>The meaning of the keys is as follows.</p>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
+<tr><td>styleName</td><td>Name of the style being benchmarked</td></tr>
+<tr><td>syncRendering</td><td>Whether synchronous rendering was used</td></tr>
+<tr><td>thermalState</td><td>Thermal state of the device during benchmark</td></tr>
+<tr><td>fps</td><td>Average frames per second achieved during the benchmark</td></tr>
+<tr><td>avgEncodingTime</td><td>Average time taken for encoding in milliseconds</td></tr>
+<tr><td>avgRenderingTime</td><td>Average time taken for rendering in milliseconds</td></tr>
+<tr><td>low1pEncodingTime</td><td>1st percentile (worst case) encoding time in milliseconds</td></tr>
+<tr><td>low1pRenderingTime</td><td>1st percentile (worst case) rendering time in milliseconds</td></tr>
+<tr><td>deviceManufacturer</td><td>Manufacturer of the test device</td></tr>
+<tr><td>model</td><td>Model number/name of the test device</td></tr>
+<tr><td>renderer</td><td>Type of renderer used (<code>drawable</code> for Open GL ES, <code>vulkan</code> for Vulkan, <code>legacy</code> for the legacy Open GL ES rendering backend)</td></tr>
+<tr><td>debugBuild</td><td>Whether the build was a debug build</td></tr>
+<tr><td>gitRevision</td><td>Git commit hash of the code version</td></tr>
+<tr><td>timestamp</td><td>Unix timestamp of when the benchmark was run</td></tr>
+</tbody></table>
+</div>
+<h2 id="large-scale-benchmarks-on-aws-device-farm"><a class="header" href="#large-scale-benchmarks-on-aws-device-farm">Large Scale Benchmarks on AWS Device Farm</a></h2>
+<p>Sometimes we do a large scale benchmark across a variety of devices on AWS Device Farm. We ran one such test in <a href="https://github.com/maplibre/maplibre-native/issues/2787#issuecomment-2466948888">November 2024</a> to compare the performance of the then new Vulkan rendering backend against the OpenGL ES backend. There are some scripts in the repo to kick off the tests and to collect and plot the results:</p>
+<pre><code>scripts/aws-device-farm/aws-device-farm-run.sh
+scripts/aws-device-farm/collect-benchmark-outputs.mjs
+scripts/aws-device-farm/update-benchmark-db.mjs
+scripts/aws-device-farm/plot-android-benchmark-results.py
+</code></pre>
+<h2 id="continuous-benchmarking"><a class="header" href="#continuous-benchmarking">Continuous Benchmarking</a></h2>
+<p>We are running the Android benchmark on every merge with <code>main</code>.</p>
+<p>You can find the results per commit <a href="https://maplibre-native.s3.eu-central-1.amazonaws.com/index.html#android-benchmark-render/">here</a> or pull them from our public S3 bucket:</p>
+<pre><code>aws s3 sync s3://maplibre-native/android-benchmark-render/ .
+</code></pre>
+<h2 id="benchmarks-in-pull-request"><a class="header" href="#benchmarks-in-pull-request">Benchmarks in Pull Request</a></h2>
+<p>To run the benchmarks (for Android) include the following line on a PR comment:</p>
+<pre><code>!benchmark android
+</code></pre>
+<p>A file with the benchmark results will be added to the workflow summary, which you can compare with the previous results in the bucket.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="maplibre-ios-developer-guide"><a class="header" href="#maplibre-ios-developer-guide">MapLibre iOS Developer Guide</a></h1>
 <h2 id="bazel"><a class="header" href="#bazel">Bazel</a></h2>
 <p><a href="https://bazel.build/">Bazel</a> is used for building on iOS.</p>
@@ -1525,7 +1595,7 @@ bazel run //platform/glfw:glfw_app -- --style https://raw.githubusercontent.com/
 <li><a href="https://www.youtube.com/watch?v=ghXk3Bk5F2U&amp;t=37s">Tracy CppCon presentation on Youtube</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rust"><a class="header" href="#rust">Rust</a></h1>
-<p>We have added experimental support for intergrating Rust code into the source tree.</p>
+<p>We have added experimental support for integrating Rust code into the source tree.</p>
 <h2 id="rust-bridge"><a class="header" href="#rust-bridge">Rust Bridge</a></h2>
 <p>The Rust bridge lives in the root <code>rustutils</code> directory.</p>
 <p>We use <a href="https://cxx.rs/">CXX</a> to allow interop between Rust and C++.</p>
@@ -1533,32 +1603,40 @@ bazel run //platform/glfw:glfw_app -- --style https://raw.githubusercontent.com/
 <h3 id="cmake"><a class="header" href="#cmake">CMake</a></h3>
 <p>When building with CMake, need to have the correct Rust toolchain(s) installed. See <a href="https://www.rust-lang.org/tools/install">Install Rust</a> to install Rust.</p>
 <p>You can use <code>rustup</code> to manage toolchains. Which toolchain you needs depends on your host platform and for what platform you are trying to build. If your host and target platform are the same, you probably have the correct toolchain installed after installing Rust. For example when building for <strong>Android</strong> and building on a <strong>x84 Linux</strong> host you would use the following command:</p>
-<pre><code>rustup target add --toolchain stable-x86_64-unknown-linux-gnu aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+<pre><code class="language-shell">rustup target add --toolchain stable-x86_64-unknown-linux-gnu aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 </code></pre>
 <p>See <a href="https://doc.rust-lang.org/nightly/rustc/platform-support.html">Platform Support</a> in the Rust documentation for more details. You will get a descriptive error message when the correct toolchain is not available, so we don't list all possible combinations here.</p>
 <p>You also need to have cxxbridge installed:</p>
-<pre><code>cargo install cxxbridge-cmd
+<pre><code class="language-shell">cargo install cxxbridge-cmd
 </code></pre>
 <p>Set <code>-DMLN_USE_RUST=ON</code> when generating a configuration with CMake.</p>
 <h3 id="bazel-1"><a class="header" href="#bazel-1">Bazel</a></h3>
 <p>Pass the <code>--//:use_rust</code> flag to Bazel commands.</p>
 <p>Note that when <a href="./ios/README.html">generating an Xcode project</a> you should not pass this option to Bazel directly, but as follows:</p>
-<pre><code>bazel run //platform/ios:xcodeproj --@rules_xcodeproj//xcodeproj:extra_common_flags="--//:renderer=metal --//:use_rust"
+<pre><code class="language-shell">bazel run //platform/ios:xcodeproj --@rules_xcodeproj//xcodeproj:extra_common_flags="--//:renderer=metal --//:use_rust"
 </code></pre>
+<h2 id="just"><a class="header" href="#just">Just</a></h2>
+<p>For the Rust subproject, we suggest installing <a href="https://github.com/casey/just#readme">just</a>, a modern alternative to <code>make</code>. The <code>justfile</code> in the root directory contains a number of useful commands for building and testing the Rust code.  The same commands can be run directly, but <code>just</code> provides a more convenient interface.</p>
+<ul>
+<li>Install <code>just</code> with <code>cargo install just</code></li>
+<li>Run <code>just</code> in the <code>/rustutils</code> dir to see a list of available commands</li>
+<li>Some common commands: <code>just check</code>, <code>just test</code>, <code>just fmt</code></li>
+<li>To run the same steps as used by CI, run <code>just ci-test</code></li>
+</ul>
 <h2 id="creating-a-new-module"><a class="header" href="#creating-a-new-module">Creating a new Module</a></h2>
 <p>To create a new module:</p>
 <ol>
 <li>Add a new source file to <code>rustutils/src/example.rs</code>.</li>
 <li>Implement it, see the <a href="https://cxx.rs/index.html">CXX documentation</a> or see <code>rustutils/src/color.rs</code> for an example.</li>
 <li>Create a C++ source file that will use the generated C++ header. See <code>src/mbgl/util/color.rs.cpp</code> for an example. Import the generated header with
-<pre><code>#include &lt;rustutils/example.hpp&gt;
+<pre><code class="language-cpp">#include &lt;rustutils/example.hpp&gt;
 </code></pre>
 </li>
 <li>Conditionally include either the <code>*.rs.cpp</code> file or the <code>*.cpp</code> file it replaces in CMake and Bazel. Here is what it looks like for CMake:
-<pre><code>${PROJECT_SOURCE_DIR}/src/mbgl/util/color$&lt;IF:$&lt;BOOL:${MLN_USE_RUST}&gt;,.rs.cpp,.cpp&gt;
+<pre><code class="language-cmake">${PROJECT_SOURCE_DIR}/src/mbgl/util/color$&lt;IF:$&lt;BOOL:${MLN_USE_RUST}&gt;,.rs.cpp,.cpp&gt;
 </code></pre>
 And here for Bazel:
-<pre><code>select({
+<pre><code class="language-bazel">select({
   "//:rust": [
       "src/mbgl/util/color.rs.cpp",
   ],
