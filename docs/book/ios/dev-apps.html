@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Tests - MapLibre Native Developer Documentation</title>
+        <title>Development Apps - MapLibre Native Developer Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -220,66 +220,37 @@
 }
 
 </style>
-<h1 id="maplibre-android-tests"><a class="header" href="#maplibre-android-tests">MapLibre Android Tests</a></h1>
-<h2 id="render-tests"><a class="header" href="#render-tests">Render Tests</a></h2>
-<p>To run the render tests for Android, run the configuration for the <code>androidRenderTest.app</code> module.</p>
-<h3 id="filtering-render-tests"><a class="header" href="#filtering-render-tests">Filtering Render Tests</a></h3>
-<p>You can filter the tests to run by passing a flag to the file <code>platform/android/src/test/render_test_runner.cpp</code>:</p>
-<pre><code class="language-cpp">std::vector&lt;std::string&gt; arguments = {..., "-f", "background-color/literal"};
+<h1 id="development-apps"><a class="header" href="#development-apps">Development Apps</a></h1>
+<p>There are two iOS apps available in the repo that you can use for MapLibre Native development. One Objective-C based app and a Swift based app.</p>
+<h2 id="objective-c-app"><a class="header" href="#objective-c-app">Objective-C App</a></h2>
+<p>This app is available as "App" in the <a href="./README.html">generated Xcode project</a>.</p>
+<p>The source code lives in <code>platform/ios/app</code>.</p>
+<p>You can also build and run it from the command line with:</p>
+<pre><code>bazel run --//:renderer=metal //platform/ios:App
 </code></pre>
-<h3 id="viewing-the-results"><a class="header" href="#viewing-the-results">Viewing the Results</a></h3>
-<p>Once the application quits, use the Device Explorer to navigate to <code>/data/data/org.maplibre.render_test_runner/files</code>.</p>
-<img width="980" alt="image" src="https://github.com/maplibre/maplibre-native/assets/649392/0dc42d4a-6221-46b6-8352-1eb24d466e91">
-<p>Double click <code>android-render-test-runner-style.html</code>. Right click on the opened tab and select <em>Open In &gt; Browser</em>. You should see that a single render test passed.</p>
-<img width="801" alt="image" src="https://github.com/maplibre/maplibre-native/assets/649392/33e88999-7787-492f-afd9-f5a3e3fd61f7">
-<p>Alternatively to download (and open) the results from the command line, use:</p>
-<pre><code>adb shell "run-as org.maplibre.render_test_runner cat files/metrics/android-render-test-runner-style.html" &gt; android-render-test-runner-style.html
-open android-render-test-runner-style.html
+<p align="center">
+  <img width="300" alt="Objective-C app screenshot" src="https://github.com/user-attachments/assets/aeb0cb5e-1f6c-439e-8668-22ee0a0b11f2" />
+</p>
+<h2 id="swift-app"><a class="header" href="#swift-app">Swift App</a></h2>
+<p>The Swift App is mainly used to demo usage patterns in the <a href="./ios-documentation.html#examples">example documentation</a>.</p>
+<p>This app is available as "MapLibreApp" in the <a href="./README.html">generated Xcode project</a>.</p>
+<p>The source code lives in <code>platform/ios/swift-app</code>.</p>
+<p align="center">
+  <img width="300" alt="Swift app screenshot" src="https://github.com/user-attachments/assets/87f4cea4-40dd-4744-a935-c7cebd6887f1" />
+</p>
+<p>You can also build and run it from the command line with:</p>
+<pre><code>bazel run --//:renderer=metal //platform/ios/app-swift:MapLibreApp
 </code></pre>
-<h3 id="updating-the-render-tests"><a class="header" href="#updating-the-render-tests">Updating the Render Tests</a></h3>
-<p>Now let's edit <code>metrics/integration/render-tests/background-color/literal/style.json</code>, change this line:</p>
-<pre><code>        "background-color": "red"
-</code></pre>
-<p>to</p>
-<pre><code>        "background-color": "yellow"
-</code></pre>
-<p>We need to make sure that the new <code>data.zip</code> with the data for the render tests is installed on the device. You can use the following commands:</p>
-<pre><code>tar chf render-test/android/app/src/main/assets/data.zip --format=zip --files-from=render-test/android/app/src/main/assets/to_zip.txt
-adb push render-test/android/app/src/main/assets/data.zip /data/local/tmp/data.zip
-adb shell chmod 777 /data/local/tmp/data.zip
-adb shell "run-as org.maplibre.render_test_runner unzip -o /data/local/tmp/data.zip -d files"
-</code></pre>
-<p>Rerun the render test app and reload the Device Explorer. When you re-open the HTML file with the results you should now see a failing test:</p>
-<img width="685" alt="image" src="https://github.com/maplibre/maplibre-native/assets/649392/303ad75a-cf74-4b8c-927c-c9bd59a79de4">
-<p>Now download the <code>actual.png</code> in <code>metrics/integration/render-tests/background-color/literal</code> with the Device Explorer. Replace the corresponding <code>expected.png</code> on your local file system. Upload the new render test data again and run the test app once more.</p>
-<img width="800" alt="image" src="https://github.com/maplibre/maplibre-native/assets/649392/04734c6a-9cf1-489a-b9bb-8d857581261c">
-<p>Of we don't want to commit this change. But know you can add and debug (Android) render tests.</p>
-<h2 id="instrumentation-tests"><a class="header" href="#instrumentation-tests">Instrumentation Tests</a></h2>
-<p>To run the instrumentation tests, choose the "Instrumentation Tests" run configuration.</p>
-<p>Your device needs remain unlocked for the duration of the tests.</p>
-<h2 id="c-unit-tests"><a class="header" href="#c-unit-tests">C++ Unit Tests</a></h2>
-<p>There is a separate Gradle project that contains a test app which runs the C++ Unit Tests. It does not depend on the Android platform implementations.</p>
-<p>You can find the project in <code>test/android.</code> You can open this project in Android Studio and run the C++ Tests on an Android device or Simulator.</p>
-<p>To run a particular set of tests you can modify the <code>--gtest_filter</code> flag in <code>platform/android/src/test/test_runner.cpp</code>. See the <a href="https://google.github.io/googletest/advanced.html#running-a-subset-of-the-tests">GoogleTest documentation</a> for details how to use this flag.</p>
-<h3 id="aws-device-farm"><a class="header" href="#aws-device-farm">AWS Device Farm</a></h3>
-<p>The instrumentation tests and C++ unit tests are running on AWS Device Farm. To see the results and the logs, go to:</p>
-<p><a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-east-1#/mobile/projects/20687d72-0e46-403e-8f03-0941850665bc/runs">https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-east-1#/mobile/projects/20687d72-0e46-403e-8f03-0941850665bc/runs</a>.</p>
-<p>Use the following login details (this is a read-only account):</p>
-<div class="table-wrapper"><table><thead><tr><th></th><th></th></tr></thead><tbody>
-<tr><td>Alias</td><td><code>maplibre</code></td></tr>
-<tr><td>Username</td><td><code>maplibre</code></td></tr>
-<tr><td>Password</td><td><code>maplibre</code></td></tr>
-</tbody></table>
-</div>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../android/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../ios/release.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../android/android-documentation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../design/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -289,11 +260,11 @@ adb shell "run-as org.maplibre.render_test_runner unzip -o /data/local/tmp/data.
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../android/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../ios/release.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../android/android-documentation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../design/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

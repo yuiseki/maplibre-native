@@ -25,9 +25,9 @@
         <link rel="stylesheet" href="fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="diff.css">
@@ -333,14 +333,18 @@ Mapbox Style Spec. Since it is derived from Mapbox's original work it also uses 
 <p>In 2023 we co-opted Bazel as a build tool (generator), mostly due to it having better support for iOS compared to CMake. Some platforms can use CMake as well as Bazel.</p>
 <div class="table-wrapper"><table><thead><tr><th>Platform</th><th>CMake</th><th>Bazel</th></tr></thead><tbody>
 <tr><td>Android</td><td>✅ (via Gradle)</td><td>❌</td></tr>
-<tr><td>iOS</td><td>❌</td><td>✅</td></tr>
+<tr><td>iOS</td><td>✅<sup class="footnote-reference"><a href="#3">3</a></sup></td><td>✅</td></tr>
 <tr><td>Linux</td><td>✅</td><td>✅</td></tr>
-<tr><td>Windows</td><td>✅</td><td>❌</td></tr>
+<tr><td>Windows</td><td>✅</td><td>✅</td></tr>
 <tr><td>macOS</td><td>✅</td><td>✅</td></tr>
 <tr><td>Node.js</td><td>✅</td><td>❌</td></tr>
 <tr><td>Qt</td><td>✅</td><td>❌</td></tr>
 </tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><style>
+</div>
+<div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup>
+<p>Some targets are supported, see <a href="ios/README.html#cmake">here</a>.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><style>
 .mdbook-alerts {
   padding: 8px 16px;
   margin-bottom: 16px;
@@ -1104,8 +1108,16 @@ Confirm that no errors are shown.</p>
 <pre><code>bazel run //platform/ios:App --//:renderer=metal
 </code></pre>
 <p>You can also build targets from the command line. For example, if you want to build your own XCFramework, see the 'Build XCFramework' step in the <a href="ios/../../.github/workflows/ios-ci.yml">iOS CI workflow</a>.</p>
-<h2 id="swift-app"><a class="header" href="#swift-app">Swift App</a></h2>
-<p>There is also an example app built with Swift instead of Objective-C. The target is called <code>MapLibreApp</code> and the source code lives in <code>platform/ios/app-swift</code>.</p>
+<h2 id="cmake"><a class="header" href="#cmake">CMake</a></h2>
+<p>It is also possible to generate an Xcode project using CMake. As of February 2025, targets <code>mbgl-core</code>, <code>ios-sdk-static</code> and <code>app</code> (Objective-C development app) are supported.</p>
+<pre><code>cmake --preset ios -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
+xed build-ios/MapLibre\ Native.xcodeproj
+</code></pre>
+<h2 id="distribution"><a class="header" href="#distribution">Distribution</a></h2>
+<p>MapLibre iOS is distributed as an XCFramework via the <a href="https://github.com/maplibre/maplibre-gl-native-distribution">maplibre/maplibre-gl-native-distribution</a> repository. See <a href="ios/./release.html">Release MapLibre iOS</a> for the release process. Refer to the <a href="https://github.com/maplibre/maplibre-native/blob/main/.github/workflows/ios-ci.yml"><code>ios-ci.yml</code></a> workflow for an up-to-date recipe for building an XCFramework. As of February 2025 we use:</p>
+<pre><code>bazel build --compilation_mode=opt --features=dead_strip,thin_lto --objc_enable_binary_stripping \
+  --apple_generate_dsym --output_groups=+dsyms --//:renderer=metal //platform/ios:MapLibre.dynamic --embed_label=maplibre_ios_"$(cat VERSION)"
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><style>
 .mdbook-alerts {
   padding: 8px 16px;
@@ -1174,6 +1186,11 @@ Confirm that no errors are shown.</p>
 
 </style>
 <h1 id="ios-tests"><a class="header" href="#ios-tests">iOS Tests</a></h1>
+<h2 id="ios-unit-tests"><a class="header" href="#ios-unit-tests">iOS Unit Tests</a></h2>
+<p>To run the iOS unit tests via XCTest, run tests for the <code>ios_test</code> target in Xcode
+or use the following bazel command:</p>
+<pre><code>bazel test //platform/ios/test:ios_test --test_output=errors --//:renderer=metal
+</code></pre>
 <h2 id="render-tests-1"><a class="header" href="#render-tests-1">Render Tests</a></h2>
 <p>To run the render tests, run the <code>RenderTest</code> target from iOS.</p>
 <p>When running in a simulator, use</p>
@@ -1442,6 +1459,94 @@ The heading in the changelog must match <code>## &lt;VERSION&gt;</code> exactly,
 }
 
 </style>
+<h1 id="development-apps"><a class="header" href="#development-apps">Development Apps</a></h1>
+<p>There are two iOS apps available in the repo that you can use for MapLibre Native development. One Objective-C based app and a Swift based app.</p>
+<h2 id="objective-c-app"><a class="header" href="#objective-c-app">Objective-C App</a></h2>
+<p>This app is available as "App" in the <a href="ios/./README.html">generated Xcode project</a>.</p>
+<p>The source code lives in <code>platform/ios/app</code>.</p>
+<p>You can also build and run it from the command line with:</p>
+<pre><code>bazel run --//:renderer=metal //platform/ios:App
+</code></pre>
+<p align="center">
+  <img width="300" alt="Objective-C app screenshot" src="https://github.com/user-attachments/assets/aeb0cb5e-1f6c-439e-8668-22ee0a0b11f2" />
+</p>
+<h2 id="swift-app"><a class="header" href="#swift-app">Swift App</a></h2>
+<p>The Swift App is mainly used to demo usage patterns in the <a href="ios/./ios-documentation.html#examples">example documentation</a>.</p>
+<p>This app is available as "MapLibreApp" in the <a href="ios/./README.html">generated Xcode project</a>.</p>
+<p>The source code lives in <code>platform/ios/swift-app</code>.</p>
+<p align="center">
+  <img width="300" alt="Swift app screenshot" src="https://github.com/user-attachments/assets/87f4cea4-40dd-4744-a935-c7cebd6887f1" />
+</p>
+<p>You can also build and run it from the command line with:</p>
+<pre><code>bazel run --//:renderer=metal //platform/ios/app-swift:MapLibreApp
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><style>
+.mdbook-alerts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-left: 0.25em solid var(--mdbook-alerts-color);
+}
+
+.mdbook-alerts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-alerts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-alerts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-alerts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-alerts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-alerts-icon);
+  mask-image: var(--mdbook-alerts-icon);
+}
+
+.mdbook-alerts-note {
+  --mdbook-alerts-color: rgb(9, 105, 218);
+  /* https://icon-sets.iconify.design/material-symbols/info-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 17q.425 0 .713-.288T13 16v-4q0-.425-.288-.712T12 11q-.425 0-.712.288T11 12v4q0 .425.288.713T12 17m0-8q.425 0 .713-.288T13 8q0-.425-.288-.712T12 7q-.425 0-.712.288T11 8q0 .425.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137q-1.35-1.35-2.137-3.175T2 12q0-2.075.788-3.9t2.137-3.175q1.35-1.35 3.175-2.137T12 2q2.075 0 3.9.788t3.175 2.137q1.35 1.35 2.138 3.175T22 12q0 2.075-.788 3.9t-2.137 3.175q-1.35 1.35-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12q0-3.35-2.325-5.675T12 4Q8.65 4 6.325 6.325T4 12q0 3.35 2.325 5.675T12 20m0-8"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-tip {
+  --mdbook-alerts-color: rgb(26, 127, 55);
+  /* https://icon-sets.iconify.design/material-symbols/lightbulb-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 22q-.825 0-1.412-.587T10 20h4q0 .825-.587 1.413T12 22m-3-3q-.425 0-.712-.288T8 18q0-.425.288-.712T9 17h6q.425 0 .713.288T16 18q0 .425-.288.713T15 19zm-.75-3q-1.725-1.025-2.738-2.75T4.5 9.5q0-3.125 2.188-5.312T12 2q3.125 0 5.313 2.188T19.5 9.5q0 2.025-1.012 3.75T15.75 16zm.6-2h6.3q1.125-.8 1.738-1.975T17.5 9.5q0-2.3-1.6-3.9T12 4Q9.7 4 8.1 5.6T6.5 9.5q0 1.35.613 2.525T8.85 14M12 14"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-important {
+  --mdbook-alerts-color: rgb(130, 80, 223);
+  /* https://icon-sets.iconify.design/material-symbols/chat-info-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 7q.425 0 .713-.288T13 6q0-.425-.288-.712T12 5q-.425 0-.712.288T11 6q0 .425.288.713T12 7m0 8q.425 0 .713-.288T13 14v-4q0-.425-.288-.712T12 9q-.425 0-.712.288T11 10v4q0 .425.288.713T12 15m-6 3l-2.3 2.3q-.475.475-1.088.213T2 19.575V4q0-.825.588-1.412T4 2h16q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18zm-.85-2H20V4H4v13.125zM4 16V4z"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-warning {
+  --mdbook-alerts-color: rgb(154, 103, 0);
+  /* https://icon-sets.iconify.design/material-symbols/warning-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M2.725 21q-.275 0-.5-.137t-.35-.363q-.125-.225-.137-.488t.137-.512l9.25-16q.15-.25.388-.375T12 3q.25 0 .488.125t.387.375l9.25 16q.15.25.138.513t-.138.487q-.125.225-.35.363t-.5.137zm1.725-2h15.1L12 6zM12 18q.425 0 .713-.288T13 17q0-.425-.288-.712T12 16q-.425 0-.712.288T11 17q0 .425.288.713T12 18m0-3q.425 0 .713-.288T13 14v-3q0-.425-.288-.712T12 10q-.425 0-.712.288T11 11v3q0 .425.288.713T12 15m0-2.5"%2F%3E%3C%2Fsvg%3E');
+}
+
+.mdbook-alerts-caution {
+  --mdbook-alerts-color: rgb(207, 34, 46);
+  /* https://icon-sets.iconify.design/material-symbols/brightness-alert-outline-rounded/ */
+  --mdbook-alerts-icon: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cpath fill="currentColor" d="M12 17q.425 0 .713-.288T13 16q0-.425-.288-.712T12 15q-.425 0-.712.288T11 16q0 .425.288.713T12 17m0-4q.425 0 .713-.288T13 12V8q0-.425-.288-.712T12 7q-.425 0-.712.288T11 8v4q0 .425.288.713T12 13m-3.35 7H6q-.825 0-1.412-.587T4 18v-2.65L2.075 13.4q-.275-.3-.425-.662T1.5 12q0-.375.15-.737t.425-.663L4 8.65V6q0-.825.588-1.412T6 4h2.65l1.95-1.925q.3-.275.663-.425T12 1.5q.375 0 .738.15t.662.425L15.35 4H18q.825 0 1.413.588T20 6v2.65l1.925 1.95q.275.3.425.663t.15.737q0 .375-.15.738t-.425.662L20 15.35V18q0 .825-.587 1.413T18 20h-2.65l-1.95 1.925q-.3.275-.662.425T12 22.5q-.375 0-.737-.15t-.663-.425zm.85-2l2.5 2.5l2.5-2.5H18v-3.5l2.5-2.5L18 9.5V6h-3.5L12 3.5L9.5 6H6v3.5L3.5 12L6 14.5V18zm2.5-6"%2F%3E%3C%2Fsvg%3E');
+}
+
+</style>
 <div class="mdbook-alerts mdbook-alerts-note">
 <p class="mdbook-alerts-title">
   <span class="mdbook-alerts-icon"></span>
@@ -1519,7 +1624,7 @@ The heading in the changelog must match <code>## &lt;VERSION&gt;</code> exactly,
 
 </style>
 <h1 id="ten-thousand-foot-view"><a class="header" href="#ten-thousand-foot-view">Ten Thousand Foot View</a></h1>
-<p><img src="design/media/ten-thousand-foot-view-diagram.png" alt="" /><br />
+<p><img src="design/media/ten-thousand-foot-view-diagram.png" alt="" />
 <em>Figure 1: MapLibre Native Components – Ten Thousand Foot view</em></p>
 <p>From ten thousand foot, MapLibre Native is composed of <em>Map View</em> and a
 <em>Renderer</em>. MapLibre Native supports iOS, Android, Linux, QT, MacOS,
@@ -1875,7 +1980,7 @@ measured in degree angles instead of meters. Because angular distance
 stays the same if we move the angle across the axis of earth.</p>
 <p>Figure 2 shows rendering map tile through the rendering spaces and
 transformations below:</p>
-<p><img src="design/media/rendering-spaces-and-transformations-for-map-tiles.png" alt="" /><br />
+<p><img src="design/media/rendering-spaces-and-transformations-for-map-tiles.png" alt="" />
 <em>Figure 2: Rendering Spaces and Transformations for Map Tiles</em></p>
 <h2 id="world-coordinates"><a class="header" href="#world-coordinates">World Coordinates</a></h2>
 <p>World Coordinates for maps start with <em>Geographic Coordinate Systems</em>.
@@ -2002,7 +2107,7 @@ requires map center, bearing, and pitch.</p>
 move the 3D plane with tiles, rather moves the camera atop the defined
 position named center. In the rendering world, this is not the center of
 the 3D plane we render tiles on, rather the position of the camera.</em></p>
-<p><img src="design/media/perspective-frustum.png" alt="" /><br />
+<p><img src="design/media/perspective-frustum.png" alt="" />
 <em>Figure 3: Perspective Frustum (Sourced from learnopengl.com)</em></p>
 <p>The benefit of tile coordinates continues here. The camera representation
 we use here, to be specific the view matrix, can directly take the tile
@@ -2469,7 +2574,7 @@ for future improvement. This document intends to address the first.</p>
 <h2 id="recommendations"><a class="header" href="#recommendations">Recommendations</a></h2>
 <p>This document proposes the following component architecture for MapLibre
 Native to address the architectural shortcomings.</p>
-<p><img src="design/media/proposed-architecture-of-maplibre-gl.png" alt="" /><br />
+<p><img src="design/media/proposed-architecture-of-maplibre-gl.png" alt="" />
 <em>Figure 4: Proposed Architecture of MapLibre Native</em></p>
 <p>Proposed architecture of MapLibre Native in Figure 4 addresses the
 aforementioned problems by:</p>
@@ -2617,7 +2722,7 @@ languages.</p>
 
 </style>
 <h1 id="android-map-rendering-data-flow"><a class="header" href="#android-map-rendering-data-flow">Android Map Rendering Data Flow</a></h1>
-<p><img src="design/media/android-data-flow.jpg" alt="" /><br />
+<p><img src="design/media/android-data-flow.jpg" alt="" />
 <em>Figure 5: Simplified data flow diagram of initializing a map in Android</em></p>
 <p>Figure 5 shows a simplified data flow diagram of initializing a map. The
 device section of this data flow diagram is based on Android platform.</p>
@@ -2639,7 +2744,7 @@ contract established from the Java runtime. The render thread this
 document talked about before is seen in the form of <em>MapRenderer</em>. This
 is an Actor that passes the rendering events from the device runtime to
 <em>MapLibre Native</em> renderer.</p>
-<p><img src="design/media/workflow-of-rendering-tiles.jpg" alt="" /><br />
+<p><img src="design/media/workflow-of-rendering-tiles.jpg" alt="" />
 <em>Figure 6: Workflow of rendering tiles</em></p>
 <p>Before the frame-by-frame map rendering
 starts with <em>MapLibre Native</em> renderer, the generic map component
@@ -2706,7 +2811,7 @@ function uses a glyph manager for fetching glyphs and font stacks that
 contains said glyphs. Sources and Layers are translated to
 <em>RenderSource</em> and <em>RenderLayer</em> objects.</p>
 <p><em>For the sake of restating, a layer is composed of a set of sources.</em></p>
-<p><img src="design/media/android-rendering-map-tiles.jpg" alt="" /><br />
+<p><img src="design/media/android-rendering-map-tiles.jpg" alt="" />
 <em>Figure 7: Simplified data flow diagram of rendering map tiles</em></p>
 <p>A <em>RenderSource</em> is produced from a single
 source that has an internal <em>update</em> method. This method produces the
@@ -2790,7 +2895,7 @@ see more about that in Coordinate System section.</p>
 
 </style>
 <h1 id="geometry-tile-worker"><a class="header" href="#geometry-tile-worker">Geometry Tile Worker</a></h1>
-<p><img src="design/media/geometry-tile-worker-state-machine.jpg" alt="" /><br />
+<p><img src="design/media/geometry-tile-worker-state-machine.jpg" alt="" />
 <em>Figure 8: Simplified Geometry Tile Worker State Machine</em></p>
 <p>Going back to Geometry Tile Worker, it is
 a state machine. The main principle is that Geometry Tile Worker should
@@ -3177,7 +3282,7 @@ bazel run //platform/glfw:glfw_app -- --style https://raw.githubusercontent.com/
 <p>The Rust bridge lives in the root <code>rustutils</code> directory.</p>
 <p>We use <a href="https://cxx.rs/">CXX</a> to allow interop between Rust and C++.</p>
 <h2 id="building-1"><a class="header" href="#building-1">Building</a></h2>
-<h3 id="cmake"><a class="header" href="#cmake">CMake</a></h3>
+<h3 id="cmake-1"><a class="header" href="#cmake-1">CMake</a></h3>
 <p>When building with CMake, need to have the correct Rust toolchain(s) installed. See <a href="https://www.rust-lang.org/tools/install">Install Rust</a> to install Rust.</p>
 <p>You can use <code>rustup</code> to manage toolchains. Which toolchain you needs depends on your host platform and for what platform you are trying to build. If your host and target platform are the same, you probably have the correct toolchain installed after installing Rust. For example when building for <strong>Android</strong> and building on a <strong>x84 Linux</strong> host you would use the following command:</p>
 <pre><code class="language-shell">rustup target add --toolchain stable-x86_64-unknown-linux-gnu aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
