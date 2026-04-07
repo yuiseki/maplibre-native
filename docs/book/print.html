@@ -74,10 +74,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7ea106a5.js";
+            window.path_to_searchindex_js = "searchindex-71783a31.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-fd1359ca.js"></script>
+        <script src="toc-d0bf464d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -243,7 +243,7 @@ Mapbox Style Spec. Since it is derived from Mapbox’s original work it also use
 <h3 id="glfw"><a class="header" href="#glfw">GLFW</a></h3>
 <p>You can find an app that uses GLFW in <a href="https://github.com/maplibre/maplibre-native/tree/main/platform/glfw"><code>platform/glfw</code></a>. It works on macOS, Linux and Windows. The app shows an interactive map that can be interacted with. Since GLFW adds relatively little complexity this app is used a lot for development. You can also learn about the C++ API by studying the source code of the GLFW app.</p>
 <h2 id="rendering-backends"><a class="header" href="#rendering-backends">Rendering Backends</a></h2>
-<p>Originally the project only supported OpenGL 2.0. In 2023, the <a href="https://github.com/maplibre/maplibre-native/blob/main/design-proposals/2022-10-27-rendering-modularization.md">renderer was modularized</a> allowing for the implementation of alternate rendering backends. The first alternate rendering backend that was implemented was <a href="https://maplibre.org/news/2024-01-19-metal-support-for-maplibre-native-ios-is-here/">Metal</a>, followed by <a href="https://maplibre.org/news/2024-12-12-maplibre-android-vulkan/">Vulkan</a>. In the future other rendering backends could be implemented such as WebGPU.</p>
+<p>Originally the project only supported OpenGL 2.0. In 2023, the <a href="https://github.com/maplibre/maplibre-native/blob/main/design-proposals/2022-10-27-rendering-modularization.md">renderer was modularized</a> allowing for the implementation of alternate rendering backends. The first alternate rendering backend that was implemented was <a href="https://maplibre.org/news/2024-01-19-metal-support-for-maplibre-native-ios-is-here/">Metal</a>, followed by <a href="https://maplibre.org/news/2024-12-12-maplibre-android-vulkan/">Vulkan</a>, and recently <a href="https://maplibre.org/news/2025-10-04-maplibre-newsletter-september-2025/">WebGPU</a>.</p>
 <p>What platforms support which rendering backend can be found below.</p>
 <div class="table-wrapper">
 <table>
@@ -251,8 +251,8 @@ Mapbox Style Spec. Since it is derived from Mapbox’s original work it also use
 <tr><th>Platform</th><th>OpenGL ES 3.0</th><th>Vulkan 1.0</th><th>Metal</th><th>WebGPU</th></tr>
 </thead>
 <tbody>
-<tr><td>Android</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
-<tr><td>iOS</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+<tr><td>Android</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+<tr><td>iOS</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td></tr>
 <tr><td>Linux</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
 <tr><td>Windows</td><td>✅</td><td>❌</td><td>❌</td><td>❓</td></tr>
 <tr><td>macOS</td><td>❌</td><td>✅</td><td>✅<sup class="footnote-reference" id="fr-1-1"><a href="#footnote-1">1</a></sup></td><td>✅</td></tr>
@@ -364,6 +364,12 @@ adb shell "run-as org.maplibre.render_test_runner unzip -o /data/local/tmp/data.
 <p>Now download the <code>actual.png</code> in <code>metrics/integration/render-tests/background-color/literal</code> with the Device Explorer. Replace the corresponding <code>expected.png</code> on your local file system. Upload the new render test data again and run the test app once more.</p>
 <img width="800" alt="image" src="https://github.com/maplibre/maplibre-native/assets/649392/04734c6a-9cf1-489a-b9bb-8d857581261c">
 <p>Of we don’t want to commit this change. But know you can add and debug (Android) render tests.</p>
+<h3 id="adding-alternate-expected-images"><a class="header" href="#adding-alternate-expected-images">Adding Alternate Expected Images</a></h3>
+<p>You can add alternate expected images by coping the <code>actual.png</code> to a file that starts with <code>expected</code>. You can use the following command:</p>
+<pre><code>render_test_name=tile-lod/zoom-shift
+adb exec-out run-as org.maplibre.render_test_runner cat files/metrics/integration/render-tests/$render_test_name/actual.png &gt; metrics/integration/render-tests/$render_test_name/expected-android.png
+</code></pre>
+<p>Which will pull <code>tile-lod/zoom-shift/actual.png</code> and save it as <code>tile-lod/zoom-shift/expected-android.png</code>.</p>
 <h2 id="instrumentation-tests"><a class="header" href="#instrumentation-tests">Instrumentation Tests</a></h2>
 <p>To run the instrumentation tests, choose the “Instrumentation Tests” run configuration.</p>
 <p>Your device needs remain unlocked for the duration of the tests.</p>
@@ -524,6 +530,93 @@ scripts/aws-device-farm/plot-android-benchmark-results.py
 </li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rendering-backends-1"><a class="header" href="#rendering-backends-1">Rendering Backends</a></h1>
+<p>The rendering backend is selected at build time through Gradle product flavors.</p>
+<h2 id="available-backends"><a class="header" href="#available-backends">Available backends</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flavor</th><th>Backend</th><th>Status</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>opengl</code></td><td>OpenGL ES</td><td>Stable</td><td>Default, widest device compatibility</td></tr>
+<tr><td><code>vulkan</code></td><td>Vulkan</td><td>Stable</td><td>Better performance on modern devices</td></tr>
+<tr><td><code>webgpuDawn</code></td><td>WebGPU (Dawn)</td><td>Experimental</td><td>Uses Vulkan internally, see <a href="#webgpu-on-android">WebGPU</a></td></tr>
+<tr><td><code>webgpuWgpu</code></td><td>WebGPU (wgpu-native)</td><td>Experimental</td><td>Uses Vulkan internally, arm64-v8a only, see <a href="#webgpu-on-android">WebGPU</a></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="building-with-a-specific-backend"><a class="header" href="#building-with-a-specific-backend">Building with a specific backend</a></h2>
+<p>The flavor name is part of the Gradle task. For the test app:</p>
+<pre><code class="language-bash">cd platform/android
+
+# OpenGL ES
+./gradlew :MapLibreAndroidTestApp:installOpenglDebug
+
+# Vulkan
+./gradlew :MapLibreAndroidTestApp:installVulkanDebug
+
+# WebGPU (Dawn)
+./gradlew :MapLibreAndroidTestApp:installWebgpuDawnDebug
+
+# WebGPU (wgpu-native)
+./gradlew :MapLibreAndroidTestApp:installWebgpuWgpuDebug
+</code></pre>
+<p>The same pattern applies to the library module (<code>MapLibreAndroid</code>):</p>
+<pre><code class="language-bash">./gradlew :MapLibreAndroid:assembleVulkanRelease
+</code></pre>
+<h2 id="selecting-in-android-studio"><a class="header" href="#selecting-in-android-studio">Selecting in Android Studio</a></h2>
+<p>In Android Studio, use the <strong>Build Variants</strong> panel (View &gt; Tool Windows &gt; Build Variants) to pick the renderer flavor. Each module will show a dropdown combining the flavor and build type, e.g. <code>vulkanDebug</code> or <code>openglRelease</code>.</p>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How it works</a></h2>
+<p>Each flavor sets different CMake arguments:</p>
+<ul>
+<li><code>opengl</code>: <code>-DMLN_WITH_OPENGL=ON</code></li>
+<li><code>vulkan</code>: <code>-DMLN_WITH_VULKAN=ON</code></li>
+<li><code>webgpuDawn</code>: <code>-DMLN_WITH_WEBGPU=ON</code>, <code>-DMLN_WEBGPU_IMPL_DAWN=ON</code></li>
+<li><code>webgpuWgpu</code>: <code>-DMLN_WITH_WEBGPU=ON</code>, <code>-DMLN_WEBGPU_IMPL_WGPU=ON</code></li>
+</ul>
+<p>Only one backend is active per build. Renderer-specific Java code lives in <code>src/opengl/</code>, <code>src/vulkan/</code>, or <code>src/webgpu/</code> source sets.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="webgpu-on-android"><a class="header" href="#webgpu-on-android">WebGPU on Android</a></h1>
+<p>Two WebGPU implementations are supported: <strong>Dawn</strong> (Google, C++) and <strong>wgpu-native</strong> (Rust). Both use Vulkan internally on Android. The Gradle product flavors are <code>webgpuDawn</code> and <code>webgpuWgpu</code>, sharing the <code>src/webgpu/</code> Java source set.</p>
+<h2 id="building-with-dawn"><a class="header" href="#building-with-dawn">Building with Dawn</a></h2>
+<p>Dawn is fetched and built from source via CMake <code>FetchContent</code>, so no extra setup is needed. First build is slow (~20 min) because of Dawn’s dependencies (abseil, SPIRV-Tools, Tint, etc.).</p>
+<p><strong>Android Studio:</strong> Open the <strong>Build Variants</strong> panel (View &gt; Tool Windows &gt; Build Variants) and select <code>webgpuDawnDebug</code> for both <code>:MapLibreAndroid</code> and <code>:MapLibreAndroidTestApp</code>, then run normally.</p>
+<p><strong>Terminal:</strong></p>
+<pre><code class="language-bash">cd platform/android
+./gradlew :MapLibreAndroidTestApp:installWebgpuDawnDebug
+</code></pre>
+<h2 id="building-with-wgpu-native"><a class="header" href="#building-with-wgpu-native">Building with wgpu-native</a></h2>
+<p>wgpu-native requires a pre-built static library for the target ABI. The <code>webgpuWgpu</code> flavor is currently limited to <code>arm64-v8a</code>.</p>
+<h3 id="1-cross-compile-wgpu-native-for-android"><a class="header" href="#1-cross-compile-wgpu-native-for-android">1. Cross-compile wgpu-native for Android</a></h3>
+<p>Install the Rust Android target:</p>
+<pre><code class="language-bash">rustup target add aarch64-linux-android
+</code></pre>
+<p>Point cargo at the NDK linker. Create or edit <code>~/.cargo/config.toml</code>:</p>
+<pre><code class="language-toml">[target.aarch64-linux-android]
+linker = "&lt;NDK_PATH&gt;/toolchains/llvm/prebuilt/&lt;host&gt;/bin/aarch64-linux-android26-clang"
+</code></pre>
+<p>Replace <code>&lt;NDK_PATH&gt;</code> with the path to your Android NDK and <code>&lt;host&gt;</code> with your platform (e.g. <code>darwin-x86_64</code> on macOS).</p>
+<p>Then build:</p>
+<pre><code class="language-bash">cd vendor/wgpu-native
+cargo build --release --target aarch64-linux-android
+</code></pre>
+<p>This produces <code>vendor/wgpu-native/target/aarch64-linux-android/release/libwgpu_native.a</code>, which the CMake build picks up automatically.</p>
+<h3 id="2-build-and-install"><a class="header" href="#2-build-and-install">2. Build and install</a></h3>
+<p><strong>Android Studio:</strong> Select <code>webgpuWgpuDebug</code> in the Build Variants panel and run.</p>
+<p><strong>Terminal:</strong></p>
+<pre><code class="language-bash">cd platform/android
+./gradlew :MapLibreAndroidTestApp:installWebgpuWgpuDebug
+</code></pre>
+<h2 id="debugging-wgpu-native"><a class="header" href="#debugging-wgpu-native">Debugging wgpu-native</a></h2>
+<p>wgpu-native logs are routed to Android logcat under the <code>wgpu-native</code> tag (warnings and errors by default). Rust panic messages appear under <code>wgpu-native-stderr</code>. Filter with:</p>
+<pre><code class="language-bash">adb logcat -s wgpu-native:W wgpu-native-stderr:E
+</code></pre>
+<p>To increase verbosity, change <code>WGPULogLevel_Warn</code> to <code>WGPULogLevel_Info</code> (or <code>Debug</code> / <code>Trace</code>) in <code>android_webgpu_renderer_backend.cpp</code>.</p>
+<h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
+<p>The native backend is in <code>MapLibreAndroid/src/cpp/android_webgpu_renderer_backend.cpp</code>. It uses <code>#if MLN_WEBGPU_IMPL_DAWN</code> / <code>#elif MLN_WEBGPU_IMPL_WGPU</code> for the API differences, same pattern as the desktop backends.</p>
+<p>wgpu-native’s adapter request forces <code>backendType = Vulkan</code> — without this it may pick GL on some emulators, which can’t present to an ANativeWindow surface.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="maplibre-ios-developer-guide"><a class="header" href="#maplibre-ios-developer-guide">MapLibre iOS Developer Guide</a></h1>
 <h2 id="bazel"><a class="header" href="#bazel">Bazel</a></h2>
 <p><a href="https://bazel.build/">Bazel</a> is used for building on iOS.</p>
@@ -567,7 +660,7 @@ Confirm that no errors are shown.</p>
 <p>You can also build targets from the command line. For example, if you want to build your own XCFramework, see the ‘Build XCFramework’ step in the <a href=".github/workflows/ios-ci.yml">iOS CI workflow</a>.</p>
 <h2 id="cmake"><a class="header" href="#cmake">CMake</a></h2>
 <p>It is also possible to generate an Xcode project using CMake. As of February 2025, targets <code>mbgl-core</code>, <code>ios-sdk-static</code> and <code>app</code> (Objective-C development app) are supported.</p>
-<pre><code>cmake --preset ios -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
+<pre><code>cmake --preset ios-metal -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
 xed build-ios/MapLibre\ Native.xcodeproj
 </code></pre>
 <h2 id="distribution"><a class="header" href="#distribution">Distribution</a></h2>
@@ -676,6 +769,87 @@ The heading in the changelog must match <code>## &lt;VERSION&gt;</code> exactly,
 <pre><code>bazel run --//:renderer=metal //platform/ios/app-swift:MapLibreApp
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rendering-backends-2"><a class="header" href="#rendering-backends-2">Rendering Backends</a></h1>
+<p>MapLibre Native for iOS supports multiple rendering backends. The backend is selected at build time through CMake presets.</p>
+<h2 id="available-backends-1"><a class="header" href="#available-backends-1">Available backends</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Preset</th><th>Backend</th><th>Status</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ios-metal</code></td><td>Metal</td><td>Stable</td><td>Default, recommended for production</td></tr>
+<tr><td><code>ios-webgpu-dawn</code></td><td>WebGPU (Dawn)</td><td>Experimental</td><td>Uses Metal internally, see <a href="#webgpu-on-ios">WebGPU</a></td></tr>
+<tr><td><code>ios-webgpu-wgpu</code></td><td>WebGPU (wgpu-native)</td><td>Experimental</td><td>Uses Metal internally, see <a href="#webgpu-on-ios">WebGPU</a></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="building-with-a-specific-backend-1"><a class="header" href="#building-with-a-specific-backend-1">Building with a specific backend</a></h2>
+<p>Each preset generates an Xcode project in its own build directory:</p>
+<pre><code class="language-bash"># Metal (default)
+cmake --preset ios-metal -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
+xed build-ios/MapLibre\ Native.xcodeproj
+
+# WebGPU (Dawn)
+cmake --preset ios-webgpu-dawn -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
+xed build-ios-webgpu-dawn/MapLibre\ Native.xcodeproj
+
+# WebGPU (wgpu-native)
+cmake --preset ios-webgpu-wgpu -DDEVELOPMENT_TEAM_ID=YOUR_TEAM_ID
+xed build-ios-webgpu-wgpu/MapLibre\ Native.xcodeproj
+</code></pre>
+<p>Then build the <code>app</code> target in Xcode, or from the command line:</p>
+<pre><code class="language-bash">cmake --build build-ios-webgpu-wgpu -- -sdk iphonesimulator -arch arm64
+</code></pre>
+<h2 id="how-it-works-1"><a class="header" href="#how-it-works-1">How it works</a></h2>
+<p>Each preset passes different CMake variables that control which native rendering code gets compiled:</p>
+<ul>
+<li><code>ios-metal</code>: <code>-DMLN_WITH_METAL=ON</code></li>
+<li><code>ios-webgpu-dawn</code>: <code>-DMLN_WITH_WEBGPU=ON -DMLN_WEBGPU_IMPL_DAWN=ON</code></li>
+<li><code>ios-webgpu-wgpu</code>: <code>-DMLN_WITH_WEBGPU=ON -DMLN_WEBGPU_IMPL_WGPU=ON</code></li>
+</ul>
+<p>Only one backend is active per build. The Objective-C layer is shared across backends, with renderer-specific code selected at compile time via <code>#if MLN_WEBGPU_IMPL_DAWN</code> / <code>#elif MLN_WEBGPU_IMPL_WGPU</code> conditionals in <code>MLNMapView+WebGPU.mm</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="webgpu-on-ios"><a class="header" href="#webgpu-on-ios">WebGPU on iOS</a></h1>
+<p>The iOS platform supports WebGPU as a rendering backend alongside Metal. There are two WebGPU implementations: <strong>Dawn</strong> (Google) and <strong>wgpu-native</strong> (Rust). Both use Metal as the GPU backend on iOS.</p>
+<h2 id="building-with-dawn-1"><a class="header" href="#building-with-dawn-1">Building with Dawn</a></h2>
+<p>Dawn is fetched and built from source via CMake <code>FetchContent</code>, so no extra setup is needed. The first build takes a while because Dawn pulls in abseil, SPIRV-Tools, Tint, etc. Subsequent builds are incremental.</p>
+<pre><code class="language-bash">cmake --preset ios-webgpu-dawn
+cmake --build build-ios-webgpu-dawn -- -sdk iphonesimulator -arch arm64
+</code></pre>
+<h2 id="building-with-wgpu-native-1"><a class="header" href="#building-with-wgpu-native-1">Building with wgpu-native</a></h2>
+<p>wgpu-native requires a pre-built static library for the target architecture. The CMake build will attempt to build it from source if cargo is available, but cross-compilation for iOS needs some setup.</p>
+<h3 id="1-install-the-rust-ios-targets"><a class="header" href="#1-install-the-rust-ios-targets">1. Install the Rust iOS targets</a></h3>
+<pre><code class="language-bash"># For simulator (Apple Silicon Mac)
+rustup target add aarch64-apple-ios-sim
+
+# For device
+rustup target add aarch64-apple-ios
+</code></pre>
+<h3 id="2-cross-compile-wgpu-native"><a class="header" href="#2-cross-compile-wgpu-native">2. Cross-compile wgpu-native</a></h3>
+<p>For the iOS Simulator:</p>
+<pre><code class="language-bash">cd vendor/wgpu-native
+BINDGEN_EXTRA_CLANG_ARGS="--target=arm64-apple-ios -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" \
+  cargo build --release --target aarch64-apple-ios-sim \
+  --no-default-features --features metal,wgsl,spirv,glsl
+</code></pre>
+<p>For a physical device:</p>
+<pre><code class="language-bash">cd vendor/wgpu-native
+BINDGEN_EXTRA_CLANG_ARGS="--target=arm64-apple-ios -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" \
+  cargo build --release --target aarch64-apple-ios \
+  --no-default-features --features metal,wgsl,spirv,glsl
+</code></pre>
+<p>The <code>BINDGEN_EXTRA_CLANG_ARGS</code> environment variable is required so that bindgen’s macro fallback can find iOS system headers when generating FFI bindings.</p>
+<p>This produces <code>vendor/wgpu-native/target/&lt;target&gt;/release/libwgpu_native.a</code>, which the CMake build picks up automatically.</p>
+<h3 id="3-configure-and-build"><a class="header" href="#3-configure-and-build">3. Configure and build</a></h3>
+<pre><code class="language-bash">cmake --preset ios-webgpu-wgpu
+cmake --build build-ios-webgpu-wgpu -- -sdk iphonesimulator -arch arm64
+</code></pre>
+<p>If the pre-built library is not found and cargo is available, CMake will attempt to build wgpu-native automatically during configuration.</p>
+<h2 id="implementation-notes"><a class="header" href="#implementation-notes">Implementation notes</a></h2>
+<p>The native backend lives in <code>platform/ios/src/MLNMapView+WebGPU.mm</code>. It uses <code>#if MLN_WEBGPU_IMPL_DAWN</code> / <code>#elif MLN_WEBGPU_IMPL_WGPU</code> conditionals for the API differences between the two implementations, following the same pattern as the Android and desktop backends.</p>
+<p>Both backends use a plain <code>UIView</code> with a <code>CAMetalLayer</code> (not <code>MTKView</code>) for the WebGPU surface. The rendering view has <code>userInteractionEnabled = NO</code> so touch events pass through to the parent <code>MLNMapView</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="macos"><a class="header" href="#macos">macOS</a></h1>
 <p>MapLibre Native can be built for macOS. This is mostly used for development.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
@@ -721,8 +895,8 @@ xed platform/macos/MapLibre.xcodeproj
 <pre><code class="language-sh">cmake --preset macos-metal
 </code></pre>
 <p>Build and run the render tests:</p>
-<pre><code class="language-sh">cmake --build build-macos --target mbgl-render-test-runner
-build-macos/mbgl-render-test-runner --manifestPath=metrics/macos-xcode11-release-style.json
+<pre><code class="language-sh">cmake --build build-macos-metal --target mbgl-render-test-runner
+build-macos-metal/mbgl-render-test-runner --manifestPath=metrics/macos-xcode11-release-style.json
 </code></pre>
 <p>Build and run the C++ Tests:</p>
 <pre><code class="language-sh">cmake --build build-macos-metal --target mbgl-test-runner
