@@ -329,6 +329,17 @@ size_t HTTPRequest::writeCallback(void *const contents, const size_t size, const
     assert(userp);
     auto impl = reinterpret_cast<HTTPRequest *>(userp);
 
+    // If a byte range was requested but the server responded with 200 (the full
+    // resource) instead of 206, it ignored the Range header. Abort now rather
+    // than buffering the entire (possibly huge) body into memory.
+    if (impl->resource.dataRange) {
+        long responseCode = 0;
+        curl_easy_getinfo(impl->handle, CURLINFO_RESPONSE_CODE, &responseCode);
+        if (responseCode == 200) {
+            return 0;
+        }
+    }
+
     if (!impl->data) {
         impl->data = std::make_shared<std::string>();
     }
@@ -425,7 +436,10 @@ void HTTPRequest::handleResult(CURLcode code) {
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responseCode);
 
         if (responseCode == 200 || responseCode == 206) {
-            if (data) {
+            if (resource.dataRange && responseCode == 200) {
+                response->error = std::make_unique<Error>(Error::Reason::Other,
+                                                          "Server ignored Range request (returned 200 instead of 206)");
+            } else if (data) {
                 response->data = std::move(data);
             } else {
                 response->data = std::make_shared<std::string>();
